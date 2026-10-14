@@ -19,7 +19,7 @@ RUN mkdir -p build && \
     -o build/routemaster \
     $(pkg-config --cflags --libs mysqlclient)
 
-FROM gcc:14-bookworm
+FROM gcc:14
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libmariadb3 \
