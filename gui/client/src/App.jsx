@@ -15,15 +15,39 @@ function App() {
     setUser(null);
   };
 
-  if (!user) {
-    return (
-      <BrowserRouter>
-        <Routes>
-          <Route path="*" element={<LoginPage onLogin={handleLogin} />} />
-        </Routes>
-      </BrowserRouter>
-    );
-  }
+
+if (!user) {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="*"
+          element={
+            <>
+              <LoginPage onLogin={handleLogin} />
+              <div
+                style={{
+                  position: 'fixed',
+                  bottom: '8px',
+                  right: '12px',
+                  fontSize: '12px',
+                  color: '#64748b',
+                  background: '#ffffff',
+                  padding: '6px 10px',
+                  borderRadius: '6px',
+                  zIndex: 9999,
+                }}
+              >
+                DevOps Build: Automated Deployment
+              </div>
+            </>
+          }
+        />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
 
   return (
     <BrowserRouter>
