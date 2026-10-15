@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: routemaster-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: routemaster-frontend
+  template:
+    metadata:
+      labels:
+        app: routemaster-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: soham26sawkar/routemaster-frontend:latest
+          ports:
+            - containerPort: 80
+          imagePullPolicy: Always
