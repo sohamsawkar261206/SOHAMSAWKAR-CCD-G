@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -7,10 +6,8 @@ pipeline {
     }
 
     environment {
-        AWS_REGION = 'ap-south-1'
-        ECR_REGISTRY = '618826682694.dkr.ecr.ap-south-1.amazonaws.com'
-        ECR_REPOSITORY = 'routemaster-cca2'
-        IMAGE_TAG = "${BUILD_NUMBER}"
+        IMAGE_NAME = 'soham26sawkar/routemaster-frontend'
+        IMAGE_TAG = 'latest'
     }
 
     stages {
@@ -20,35 +17,60 @@ pipeline {
             }
         }
 
+        stage('Build and Test') {
+            steps {
+                dir('gui/client') {
+                    sh '''
+                        npm ci
+                        npm run build
+                    '''
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 sh '''
-                    docker build -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} .
+                    docker build \
+                      -t ${IMAGE_NAME}:${IMAGE_TAG} \
+                      -f gui/client/Dockerfile gui/client
                 '''
             }
         }
 
-        stage('Verify Image') {
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKERHUB_USER',
+                    passwordVariable: 'DOCKERHUB_TOKEN'
+                )]) {
+                    sh '''
+                        set +x
+                        echo "$DOCKERHUB_TOKEN" |
+                          docker login -u "$DOCKERHUB_USER" --password-stdin
+                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                        docker logout
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to Minikube') {
             steps {
                 sh '''
-                    docker image inspect ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+                    kubectl apply -f k8s/deployment.yaml
+                    kubectl apply -f k8s/service.yaml
+                    kubectl rollout restart deployment/routemaster-frontend
+                    kubectl rollout status deployment/routemaster-frontend --timeout=180s
                 '''
             }
         }
 
-        stage('Login to Amazon ECR') {
+        stage('Verify Deployment') {
             steps {
                 sh '''
-                    aws ecr get-login-password --region ${AWS_REGION} |
-                    docker login --username AWS --password-stdin ${ECR_REGISTRY}
-                '''
-            }
-        }
-
-        stage('Push Image to ECR') {
-            steps {
-                sh '''
-                    docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+                    kubectl get deployments,pods,services
                 '''
             }
         }
@@ -56,13 +78,10 @@ pipeline {
 
     post {
         success {
-            echo 'RouteMaster image built and pushed to Amazon ECR successfully.'
+            echo 'RouteMaster CI/CD pipeline completed successfully!'
         }
         failure {
-            echo 'Pipeline failed. Check Console Output for the error.'
-        }
-        always {
-            sh 'docker logout ${ECR_REGISTRY} || true'
+            echo 'Pipeline failed. Check the Console Output.'
         }
     }
 }
