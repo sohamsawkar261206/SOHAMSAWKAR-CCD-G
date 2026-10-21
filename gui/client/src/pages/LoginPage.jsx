@@ -27,7 +27,7 @@ export default function LoginPage({ onLogin }) {
       <div className="login-card">
         <div className="login-logo">
           <h1>🚛 RouteMaster</h1>
-          <p>Intelligent Logistics Route Optimizer</p>
+          <p>Intelligent Logistics Route Optimizer • CI/CD Updated</p>
         </div>
 
         {error && <div className="login-error">✕ {error}</div>}
